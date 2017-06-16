@@ -1,0 +1,80 @@
+- name: get enabled delorean repos
+  shell:
+    #yum -C repolist enabled | grep -o -E "^delorean[a-z-]*"
+    echo delorean
+  register: repos_out
+
+- set_fact:
+    repos: "{{ repos_out.stdout_lines }}"
+
+- name: Retrieve the real trunk repository configuration
+  shell: >
+    curl -L {{ trunk_repository }} |awk -F= '/baseurl/ {print $2}'
+  register: baseurl
+
+- name: Define hashed repository variables
+  set_fact:
+    version_hash: "{{ baseurl.stdout.split('/')[-1] }}"
+    hashed_trunk_repository: "{{ baseurl.stdout }}/delorean.repo"
+
+- name: create repo conf from template
+  template:
+    src: delorean-local.repo.j2
+    dest: "{{ working_dir }}/{{ item }}-local.repo"
+  with_items: "{{ repos }}"
+
+- name: crete docker context
+  file:
+    state: directory
+    path: "{{ mirror_context }}"
+
+- name: copy repo file to mirror_context
+  template:
+    src: {{ working_dir }}/{{ item }}-local.repo
+    dest: "{{ mirror_context }}/{{ item }}.repo"
+  with_items: "{{ repos }}"
+
+- name: copy repo files to mirror_context
+  copy:
+    src: /tmp/yum.repos.d/
+    dest: "{{ mirror_context }}"
+
+- name: generate Dockerfile
+  template:
+    src: build-mirror-Dockerfile.j2
+    dest: "{{ mirror_context }}/Dockerfile"
+
+- name: generate reposync command
+  template:
+    src: build-mirror-reposync.sh.j2
+    dest: "{{ mirror_context }}/reposync.sh"
+
+- name: generate config command
+  template:
+    src: build-mirror-config.sh.j2
+    dest: "{{ mirror_context }}/config.sh"
+
+- name: copy starter command
+  copy:
+    src: build-mirror-start.sh
+    dest: "{{ mirror_context }}/start.sh"
+
+
+- name: Build mirror container
+  docker_image:
+    name: repo-mirror:latest
+    state: present
+    path: "{{ mirror_context }}"
+
+- name: Generate docker-registry env
+  template:
+    src: docker-registry.yaml.j2
+    dest: {{ working_dir }}/docker-registry.yaml
+
+- name: start repo mirror container
+   docker_container:
+    name: repo-mirror
+    image: repo-mirror
+    restart: yes
+    ports:
+      - "8009:8009"

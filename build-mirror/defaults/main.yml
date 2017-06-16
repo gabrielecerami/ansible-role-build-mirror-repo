@@ -1,0 +1,5 @@
+# Selinux-safe port
+mirror_port: 8009
+mirror_path: /var/www/delorean-mirror
+mirror_context: /tmp/build-mirror
+

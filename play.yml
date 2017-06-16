@@ -1,0 +1,20 @@
+- name: Create mirror container image
+  hosts: undercloud
+  roles:
+    - build-mirror
+
+- name: Kolla build from local repo, pushing to local registry
+  hosts: undercloud
+  become: yes
+  become_user: root
+  vars:
+    kolla_registry: "{{ ansible_br_ctlplane.ipv4.address:8787"
+    kolla_insecure_registry: true
+    kolla_push: true
+    trunk_repository: "file:///{{ working_dir }}/delorean-local.repo"
+    trunk_deps_repository: "file:///{{ working_dir }}/delorean-deps-local.repo"
+#    kolla_rdo_images:
+#      - nova
+  tasks:
+    - include_role:
+        name: "ansible-role-rdo-kolla-build"

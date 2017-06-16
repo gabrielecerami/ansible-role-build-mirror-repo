@@ -1,0 +1,6 @@
+[{{ item }}]
+name={{ item }}
+baseurl=http://{{ ansible_br_ctlplane.ipv4.address }}:{{ mirror_port }}/{{ item }}
+gpgcheck=0
+priority=1
+enabled=1
