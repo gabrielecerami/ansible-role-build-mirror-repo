@@ -5,7 +5,7 @@
 
 - name: copy repo files to mirror_context
   copy:
-    src: /tmp/yum.repos.d/
+    src: /etc/yum.repos.d/
     dest: "{{ mirror_context }}"
 
 - name: generate Dockerfile
@@ -15,7 +15,7 @@
 
 - name: copy reposync script
   copy:
-    src: mirro-repo.py
+    src: mirror-repo.py
     dest: "{{ mirror_context }}/mirror-repo.py"
 
 - name: generate config command
@@ -37,18 +37,18 @@
 - name: Generate docker-registry env
   template:
     src: docker-registry.yaml.j2
-    dest: {{ working_dir }}/docker-registry.yaml
+    dest: "{{ working_dir }}/docker-registry.yaml"
 
 - name: start repo mirror container
-   docker_container:
+  docker_container:
     name: repo-mirror
     image: repo-mirror
     restart: yes
     env:
-      host_ip: {{ ansible_br_ctlplane.ipv4.address }}
-      system_repofiles_path: {{ system_repofiles_path }}
-      mirror_repofiles_path: {{ mirror_path }}
-      mirror_port: {{ mirro_port }}
+      host_ip: "{ ansible_br_ctlplane.ipv4.address }}"
+      system_repofiles_path: "{{ system_repofiles_path }}"
+      mirror_repofiles_path: "{{ mirror_path }}"
+      mirror_port: "{{ mirror_port }}"
     ports:
       - "{{ mirror_port }}:{{ mirror_port }}"
 

@@ -2,14 +2,19 @@ FROM centos:7
 
 EXPOSE {{ mirror_port }}
 ENTRYPOINT /root/start.sh
+ENV host_ip "{{ ansible_br_ctlplane.ipv4.address }}"
+ENV system_repofiles_path "{{ system_repofiles_path }}"
+ENV mirror_repofiles_path "{{ mirror_path }}"
+ENV mirror_port "{{ mirror_port }}"
 
-COPY config.sh start.sh /root/
+
+COPY config.sh start.sh mirror-repo.py /root/
 COPY *.repo /etc/yum.repos.d/
 
 RUN yum install -y yum-utils createrepo epel-release
 RUN yum install -y lighttpd
 
 # host /etc/yum.repos.d must be bind mounted for this to work
-RUN python mirror-repo.py
 RUN chmod +x /root/config.sh; /root/config.sh
+RUN python /root/mirror-repo.py
 RUN chmod +x /root/start.sh
