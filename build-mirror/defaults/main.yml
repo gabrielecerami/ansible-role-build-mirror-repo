@@ -1,5 +1,6 @@
 # Selinux-safe port
 mirror_port: 8009
 mirror_path: /var/www/delorean-mirror
+system_repofiles_path: /etc/yum.repos.d/
 mirror_context: /tmp/build-mirror
 

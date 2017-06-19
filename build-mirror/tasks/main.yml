@@ -1,38 +1,7 @@
-- name: get enabled delorean repos
-  shell:
-    #yum -C repolist enabled | grep -o -E "^delorean[a-z-]*"
-    echo delorean
-  register: repos_out
-
-- set_fact:
-    repos: "{{ repos_out.stdout_lines }}"
-
-- name: Retrieve the real trunk repository configuration
-  shell: >
-    curl -L {{ trunk_repository }} |awk -F= '/baseurl/ {print $2}'
-  register: baseurl
-
-- name: Define hashed repository variables
-  set_fact:
-    version_hash: "{{ baseurl.stdout.split('/')[-1] }}"
-    hashed_trunk_repository: "{{ baseurl.stdout }}/delorean.repo"
-
-- name: create repo conf from template
-  template:
-    src: delorean-local.repo.j2
-    dest: "{{ working_dir }}/{{ item }}-local.repo"
-  with_items: "{{ repos }}"
-
 - name: crete docker context
   file:
     state: directory
     path: "{{ mirror_context }}"
-
-- name: copy repo file to mirror_context
-  template:
-    src: {{ working_dir }}/{{ item }}-local.repo
-    dest: "{{ mirror_context }}/{{ item }}.repo"
-  with_items: "{{ repos }}"
 
 - name: copy repo files to mirror_context
   copy:
@@ -44,10 +13,10 @@
     src: build-mirror-Dockerfile.j2
     dest: "{{ mirror_context }}/Dockerfile"
 
-- name: generate reposync command
-  template:
-    src: build-mirror-reposync.sh.j2
-    dest: "{{ mirror_context }}/reposync.sh"
+- name: copy reposync script
+  copy:
+    src: mirro-repo.py
+    dest: "{{ mirror_context }}/mirror-repo.py"
 
 - name: generate config command
   template:
@@ -58,7 +27,6 @@
   copy:
     src: build-mirror-start.sh
     dest: "{{ mirror_context }}/start.sh"
-
 
 - name: Build mirror container
   docker_image:
@@ -76,5 +44,22 @@
     name: repo-mirror
     image: repo-mirror
     restart: yes
+    env:
+      host_ip: {{ ansible_br_ctlplane.ipv4.address }}
+      system_repofiles_path: {{ system_repofiles_path }}
+      mirror_repofiles_path: {{ mirror_path }}
+      mirror_port: {{ mirro_port }}
     ports:
-      - "8009:8009"
+      - "{{ mirror_port }}:{{ mirror_port }}"
+
+# variables for kolla build
+#- name: Retrieve the real trunk repository configuration
+#  shell: >
+#    curl -L {{ trunk_repository }} |awk -F= '/baseurl/ {print $2}'
+#  register: baseurl
+
+#- name: Define hashed repository variables
+#  set_fact:
+#    version_hash: "{{ baseurl.stdout.split('/')[-1] }}"
+#    hashed_trunk_repository: "{{ baseurl.stdout }}/delorean.repo"
+
