@@ -109,6 +109,9 @@ class RepoConfig(object):
             result = subprocess.Popen([ "createrepo", "--update", path ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             print result.stdout.read()
             result.stdout.close()
+            inrepo_config = os.path.join(path, self.filename)
+            with open(inrepo_config, "w") as inrepo_config_file:
+                self.mirror_repo_config.write(inrepo_config_file)
 
     def update_configs(self, repo_url):
         ''' takes a repo file from URL, copies to system config, then

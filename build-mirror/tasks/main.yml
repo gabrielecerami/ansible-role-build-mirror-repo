@@ -39,6 +39,13 @@
     src: docker-registry.yaml.j2
     dest: "{{ working_dir }}/docker-registry.yaml"
 
+- name: set up firewall for the mirror server
+  iptables:
+    action: insert
+    chain: INPUT
+    destination_port: {{ mirror_port }}
+    jump: ACCEPT
+
 - name: start repo mirror container
   docker_container:
     name: repo-mirror
